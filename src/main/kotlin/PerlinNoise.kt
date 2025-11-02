@@ -4,12 +4,26 @@ import kotlin.math.floor
 import kotlin.math.pow
 
 
-data class Vec2D(val x: Double, val y: Double) {
+class Vec2D(val x: Double, val y: Double) {
 	infix fun dot(v: Vec2D) = x * v.x + y * v.y
 }
 
+
 class PerlinNoise(val seed: String) {
 
+	fun Double.fastpow(exp: Int): Double {
+		if (exp == 0) return 1.0
+		if (exp == 1) return this
+		var result = 1.0
+		var b = this
+		var e = exp
+		while (e > 0) {
+			if (e and 1 == 1) result *= b
+			b *= b
+			e = e shr 1
+		}
+		return result
+	}
 	val chars: CharArray = seed.padEnd(128, '\u0000').take(128).toCharArray()
 
 	val A = 0.5
@@ -20,23 +34,28 @@ class PerlinNoise(val seed: String) {
 		acc * 31 + c.code
 	}
 
+	private val gradientCache = HashMap<Pair<Int, Int>, Vec2D>()
 
-	fun lerp(a: Double, b: Double, t: Double): Double = a + (b - a) * t
+	inline fun lerp(a: Double, b: Double, t: Double): Double = a + (b - a) * t
 
-	fun S(t: Double) = 6 * t.pow(5) - 15 * t.pow(4) + 10 * t.pow(3)
+	inline fun S(t: Double) = 6 * t.fastpow(5) - 15 * t.fastpow(4) + 10 * t.fastpow(3)
+
 
 	fun generateRandomGradient(input: Vec2D): Vec2D {
-		var s = (input.x * 374761393 + input.y * 668265263 + fin).toLong()
+		val key = Pair(floor(input.x).toInt(), floor(input.y).toInt())
+		gradientCache[key]?.let { return it }
+
+		var s = (key.first * 374761393 + key.second * 668265263 + fin).toLong()
 		s = (s xor (s shr 13)) * 1274126177L
 		s = s xor (s shr 16)
 
-		val angles = doubleArrayOf(
-			0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0
-		)
-		val angle = angles[(s and 7L).toInt()]
+		val angle = (s and 7L) * 45.0
 		val rad = Math.toRadians(angle)
-		return Vec2D(kotlin.math.cos(rad), kotlin.math.sin(rad))
+		val vec = Vec2D(kotlin.math.cos(rad), kotlin.math.sin(rad))
+		gradientCache[key] = vec
+		return vec
 	}
+
 	fun getPointU(input: Vec2D): Double {
 		return input.x - floor(input.x)
 	}
