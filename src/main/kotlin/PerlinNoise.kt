@@ -38,7 +38,13 @@ class PerlinNoise(val seed: String) {
 
 	inline fun lerp(a: Double, b: Double, t: Double): Double = a + (b - a) * t
 
-	inline fun S(t: Double) = 6 * t.fastpow(5) - 15 * t.fastpow(4) + 10 * t.fastpow(3)
+	inline fun S(t: Double): Double {
+		val t2 = t * t
+		val t3 = t2 * t
+		val t4 = t3 * t
+		val t5 = t4 * t
+		return 6 * t5 - 15 * t4 + 10 * t3
+	}
 
 
 	fun generateRandomGradient(input: Vec2D): Vec2D {
